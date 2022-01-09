@@ -1,3 +1,12 @@
+//Plant class
+// "class" keyword doesn't exist in code.org as the JS version is ES5
+function Plant () {
+  this.planted = false;
+  this.type = null;
+  this.stage = null;
+  this.variation = null;
+}
+
 // Import Data
 var plants = getColumn("US Agricultural Crops", "Crop");
 var plant2000 = getColumn("US Agricultural Crops", "2000 Yield");
@@ -10,73 +19,38 @@ var biggestYield = {"name": '', "c_yield" : 0};
 var inventory = {
   "purplePotato": 0,
   "redPotato": 0,
-  "yellowPotato": 0
-}
-
-// Set up plants
-var purpleSeeds = 0;
-var redSeeds = 0;
-var yellowSeeds = 3;
-
-updateSeedCount();
+  "yellowPotato": 0,
+  
+  "purpleSeeds": 3,
+  "redSeeds": 3,
+  "yellowSeeds": 3
+};
 
 var chosenCrop = "";
 var crops = [
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
-  {
-    "planted": false,
-    "type": null,
-    "stage": null
-  },
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
+  new Plant(),
 ];
 
 //Other Farming Variables
-var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-var year = 2000;
-var time = months[0] + ", " + year;
-setProperty("dayLabel", "text", time);
+var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"],
+["April", "Spring"], ["May", "Spring"], ["June", "Summer"], ["July", "Summer"],
+["August", "Summer"], ["September", "Fall"], ["October", "Fall"],
+["November", "Fall"], ["December", "Winter"]];
 
+var gameYear = 2000;
+var month = 0;
 var money = 250;
-setProperty("moneyLabel", "text", money);
+
+//Update the UI at the start
+updateUI();
 
 // Sort data
 function getBiggestYield(year){
@@ -100,7 +74,11 @@ return biggestYield;
 
 // Set Splash Text
 var year = randomNumber(2000, 2018);
-setTimeout(function (){ setText("splooshText", "Did you know? In " + year + ", the crop with the highest yield was " + getBiggestYield(randomNumber(2000, 2018)).name + " with " + getBiggestYield(year).c_yield + " " + getBiggestYield(year).name + "s harvested!"); }, 100);
+setTimeout(function (){ setText("splooshText", "Did you know? In " 
++ year + ", the crop with the highest yield was " + 
+getBiggestYield(randomNumber(2000, 2018)).name + " with " + 
+getBiggestYield(year).c_yield + " " + getBiggestYield(year).name + 
+"s harvested!"); }, 20);
 
 //switch screens
 onEvent("playButton", "click", function(){
@@ -121,6 +99,7 @@ onEvent("yellowPotatoSeeds", "click", function(){
 });
 
 //plant seeds
+{
 onEvent("tile1", "click", function(){
   checkAndSet(1, chosenCrop);
 });
@@ -148,10 +127,57 @@ onEvent("tile8", "click", function(){
 onEvent("tile9", "click", function(){
   checkAndSet(9, chosenCrop);
 });
+}
+
+//advance days
+onEvent("advanceDay", "click", function(){
+  setScreen("sleepScreen");
+});
+
+onEvent("startMonth", "click", function(){
+  //Set screen and time
+  setScreen("farmScreen");
+  month++;
+  
+  if(month > 11){
+    month = 0;
+    gameYear++;
+  }
+  
+  updateUI();
+  
+  //Update all the crops
+  for(var i = 0; i < crops.length; i++){
+    if(crops[i].planted == true && crops[i].stage < 4){
+      setProperty("tile" + (i+1), "image", "dirt_tile_"
+      + (crops[i].stage + 1) + "_"
+      + crops[i].variation + ".png");
+      
+      crops[i].stage += 1;
+    }else if(crops[i].planted == true && crops[i].stage == 4){
+      setProperty("tile" + (i+1), "image", crops[i].type + "_potato_grown_"
+      + crops[i].variation + ".png");
+      
+      crops[i].stage += 1;
+    }
+  }
+});
+
+//function to set various UI components
+function updateUI(){
+  var time = months[month][0] + ", " + gameYear;
+  setProperty("dayLabel", "text", time);
+  setProperty("moneyLabel", "text", money);
+
+  setProperty("yellowSeedCount", "text", "x" + inventory.yellowSeeds);
+  setProperty("redSeedCount", "text", "x" + inventory.redSeeds);
+  setProperty("purpleSeedCount", "text", "x" + inventory.purpleSeeds);
+}
 
 //function to pick seeds
 function pickSeeds(color){
-  if(getProperty(color + "PotatoSeeds", "border-width") != 3){
+  if(getProperty(color + "PotatoSeeds", "border-width") != 3 &&
+  inventory[color + "Seeds"] > 0){
     setProperty("purplePotatoSeeds", "border-width", 0);
     setProperty("redPotatoSeeds", "border-width", 0);
     setProperty("yellowPotatoSeeds", "border-width", 0);
@@ -168,20 +194,20 @@ function pickSeeds(color){
 // function to plant seeds
 function checkAndSet(tile, seed) {
   if(crops[tile-1].planted != true && chosenCrop != ""){
+    var form = randomNumber(1, 3);
     setProperty(seed + "PotatoSeeds", "border-width", 0);
-    setProperty("tile" + tile, "image", "dirt_tile_1_" + randomNumber(1, 3) + ".png");
+    setProperty("tile" + tile, "image", "dirt_tile_1_" + 
+    form + ".png");
+    
     chosenCrop = "";
     crops[tile-1] = {
       "planted": true,
       "type": seed,
-      "stage": 0
+      "stage": 1,
+      "variation": form
     };
+    
+    inventory[seed + "Seeds"]--;
+    updateUI();
   }
-}
-
-// function to update seed count
-function updateSeedCount(){
-  setProperty("yellowSeedCount", "text", "x" + yellowSeeds);
-  setProperty("redSeedCount", "text", "x" + redSeeds);
-  setProperty("purpleSeedCount", "text", "x" + purpleSeeds);
 }
