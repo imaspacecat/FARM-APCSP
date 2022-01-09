@@ -7,6 +7,7 @@ var finalDataBig = [];
 var biggestYield = {"name": '', "c_yield" : 0};
 
 // Set up plants
+var chosenCrop = "";
 var crops = [
   {
     "planted": false,
@@ -86,41 +87,72 @@ onEvent("playButton", "click", function(){
 
 //put border on selected seed packet
 onEvent("purplePotatoSeeds", "click", function(){
-  setProperty("purplePotatoSeeds", "border-width", 3);
-  setProperty("redPotatoSeeds", "border-width", 0);
-  setProperty("yellowPotatoSeeds", "border-width", 0);
-  
+  pickSeeds("purple");
 });
 
 onEvent("redPotatoSeeds", "click", function(){
-  setProperty("purplePotatoSeeds", "border-width", 0);
-  setProperty("redPotatoSeeds", "border-width", 3);
-  setProperty("yellowPotatoSeeds", "border-width", 0);
-  
+  pickSeeds("red");
 });
 
 onEvent("yellowPotatoSeeds", "click", function(){
-  setProperty("purplePotatoSeeds", "border-width", 0);
-  setProperty("redPotatoSeeds", "border-width", 0);
-  setProperty("yellowPotatoSeeds", "border-width", 3);
-  
+  pickSeeds("yellow");
 });
 
 //plant seeds
-
 onEvent("tile1", "click", function(){
-  if(getProperty("purplePotatoSeeds", "border-width") == 3){
+  checkAndSet(1, chosenCrop);
+});
+onEvent("tile2", "click", function(){
+  checkAndSet(2, chosenCrop);
+});
+onEvent("tile3", "click", function(){
+  checkAndSet(3, chosenCrop);
+});
+onEvent("tile4", "click", function(){
+  checkAndSet(4, chosenCrop);
+});
+onEvent("tile5", "click", function(){
+  checkAndSet(5, chosenCrop);
+});
+onEvent("tile6", "click", function(){
+  checkAndSet(6, chosenCrop);
+});
+onEvent("tile7", "click", function(){
+  checkAndSet(7, chosenCrop);
+});
+onEvent("tile8", "click", function(){
+  checkAndSet(8, chosenCrop);
+});
+onEvent("tile9", "click", function(){
+  checkAndSet(9, chosenCrop);
+});
+
+//function to pick seeds
+function pickSeeds(color){
+  if(getProperty(color + "PotatoSeeds", "border-width") != 3){
     setProperty("purplePotatoSeeds", "border-width", 0);
-    setProperty("tile1", "image", "dirt_tile_1_1.png");
-    crops[0] = {
+    setProperty("redPotatoSeeds", "border-width", 0);
+    setProperty("yellowPotatoSeeds", "border-width", 0);
+    
+    setProperty(color + "PotatoSeeds", "border-width", 3);
+    
+    chosenCrop = color;
+  }else{
+    setProperty(color + "PotatoSeeds", "border-width", 0);
+    chosenCrop = "";
+  }
+}
+
+// function to plant seeds
+function checkAndSet(tile, seed) {
+  if(crops[tile-1].planted != true && chosenCrop != ""){
+    setProperty(seed + "PotatoSeeds", "border-width", 0);
+    setProperty("tile" + tile, "image", "dirt_tile_1_" + randomNumber(1, 3) + ".png");
+    chosenCrop = "";
+    crops[tile-1] = {
       "planted": true,
-      "type": "purple",
+      "type": seed,
       "stage": 0
     };
   }
-});
-
-// function to pick seeds
-function checkAndSet(tile, seed) {
-  
 }
