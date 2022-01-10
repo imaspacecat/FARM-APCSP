@@ -46,7 +46,7 @@ var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"]
 ["November", "Fall"], ["December", "Winter"]];
 
 var gameYear = 2000;
-var month = 0;
+var month = 2;
 var money = 250;
 
 //Update the UI at the start
@@ -148,17 +148,28 @@ onEvent("startMonth", "click", function(){
   
   //Update all the crops
   for(var i = 0; i < crops.length; i++){
-    if(crops[i].planted == true && crops[i].stage < 4){
-      setProperty("tile" + (i+1), "image", "dirt_tile_"
-      + (crops[i].stage + 1) + "_"
-      + crops[i].variation + ".png");
-      
+    if(crops[i].planted == true){
       crops[i].stage += 1;
-    }else if(crops[i].planted == true && crops[i].stage == 4){
+      
+      var randomEffect = randomNumber(1,3);
+      
+      if((months[month][1] == "Spring" || months[month][1] == "Summer")
+      && randomEffect == 1){
+        crops[i].stage += 1;
+      }
+      
+      if(crops[i].stage > 5){
+        crops[i].stage = 5;
+      }
+    }
+    
+    if(crops[i].planted == true && crops[i].stage < 5){
+      setProperty("tile" + (i+1), "image", "dirt_tile_"
+      + (crops[i].stage) + "_"
+      + crops[i].variation + ".png");
+    }else if(crops[i].planted == true && crops[i].stage == 5){
       setProperty("tile" + (i+1), "image", crops[i].type + "_potato_grown_"
       + crops[i].variation + ".png");
-      
-      crops[i].stage += 1;
     }
   }
 });
@@ -191,15 +202,14 @@ function pickSeeds(color){
   }
 }
 
-// function to plant seeds
+// function to plant or harvest seeds
 function checkAndSet(tile, seed) {
+  //code for planting
   if(crops[tile-1].planted != true && chosenCrop != ""){
     var form = randomNumber(1, 3);
-    setProperty(seed + "PotatoSeeds", "border-width", 0);
     setProperty("tile" + tile, "image", "dirt_tile_1_" + 
     form + ".png");
     
-    chosenCrop = "";
     crops[tile-1] = {
       "planted": true,
       "type": seed,
@@ -209,5 +219,15 @@ function checkAndSet(tile, seed) {
     
     inventory[seed + "Seeds"]--;
     updateUI();
+    
+    if(inventory[seed + "Seeds"] == 0){
+      setProperty(seed + "PotatoSeeds", "border-width", 0);
+      chosenCrop = "";
+    }
+  }
+  
+  //code for harvesting
+  if(crops[tile-1].planted){
+    
   }
 }
