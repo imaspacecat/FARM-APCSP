@@ -48,6 +48,7 @@ var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"]
 
 var gameYear = 2000;
 var month = 2;
+
 var money = 25;
 
 //Financial Data
@@ -239,6 +240,7 @@ function checkAndSet(tile, seed) {
     
     //reset the tile
     crops[tile-1] = new Plant();
+
   }
 }
 
