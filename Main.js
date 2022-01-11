@@ -1,3 +1,4 @@
+setScreen("homePage");
 // Plant class
 // "class" keyword doesn't exist in code.org as the JS version is ES5
 function Plant () {
@@ -48,8 +49,8 @@ var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"]
 
 var gameYear = 2000;
 var month = 2;
-
-var money = 25;
+var money = 100;
+var monthsInDebt = 0;
 
 //Financial Data
 var moneyEarnedInMonth = 0;
@@ -69,7 +70,16 @@ getBiggestYield(year).c_yield + " " + getBiggestYield(year).name +
 //switch screens
 onEvent("playButton", "click", function(){
   setScreen("farmScreen");
+  displayAlert("Welcome to F.A.R.M. soldier! Get planting, harvesting," + 
+  " don't go into debt, and you will have a good time here. Bye now! " +
+  "\n\n- General Korov", "WELCOME", "Begin", "1");
 });
+
+//close popup
+onEvent("popUpButton1", "click", function(){
+  closeAlert(1);
+});
+
 
 //put border on selected seed packet
 {
@@ -86,7 +96,7 @@ onEvent("yellowPotatoSeeds", "click", function(){
 });
 }
 
-//plant seeds
+//plant and harvest seeds
 {
 onEvent("tile1", "click", function(){
   checkAndSet(1, chosenCrop);
@@ -127,17 +137,15 @@ onEvent("startMonth", "click", function(){
   //Set screen and time
   setScreen("farmScreen");
   month++;
-  
+    
   if(month > 11){
     month = 0;
     gameYear++;
   }
-  
-  //update ui
-  updateUI();
-  
-  //reset money earned
+    
+  //reset money earned and pay lease
   moneyEarnedInMonth = 0;
+  money += leasePayment;
   
   //Update all the crops
   for(var i = 0; i < crops.length; i++){
@@ -165,7 +173,106 @@ onEvent("startMonth", "click", function(){
       + crops[i].variation + ".png");
     }
   }
+  
+  var potatoType;
+  
+  if(money < 0){
+    //Debt based alerts
+    monthsInDebt++;
+    if(monthsInDebt == 1){
+      displayAlert("Soldier, your lease is " + monthsInDebt + " month overdue! " +
+      "You have " + (5-monthsInDebt) + " months to pay up before we sieze our" +
+      " property. You have been warned. \n\n- General Korov", "WARNING", "Okay...", "1");
+    }else if (monthsInDebt == 5){
+      displayAlert("Hello there soldier. We were not kidding when we " + 
+      "said we were going to seize your property if you couldn't pay. " + 
+      "This is the end.\n\n- General Korov", "GOODBYE", "WAIT NO-", "1");
+    }
+  }else{
+    monthsInDebt = 0;
+    //Random event alerts
+    var randomEvent = randomNumber(1, 100);
+    
+    if(randomEvent <= 3){
+      potatoType = potatoColorPicker();
+      
+      //check if they have more than 0 potatoes
+      if(inventory[potatoType + "Potato"] > 0){
+        inventory[potatoType + "Potato"] = 0;
+        
+        displayAlert("Heyo Boss... I have news. Apparently a group of " +
+        "\"elite\" terrorists known as the Black Hand decided to " +
+        "steal all our " + potatoType + " potatoes...\n\n- Your Assistant",
+        "THEFT", "oof", "1");
+      }
+    }else if(randomEvent <= 6){
+      potatoType = potatoColorPicker();
+      
+      //check if they have more than 0 seeds
+      if(inventory[potatoType + "Seeds"] > 0){
+        inventory[potatoType + "Seeds"] = 0;
+        
+        displayAlert("Heya Boss... I have news. Soooo a group of " +
+        "\"impressive\" renegades known as the White Hand decided to " +
+        "steal all our " + potatoType + " seeds...\n\n- Your Assistant",
+        "THEFT", "rip", "1");
+      }
+    }else if(randomEvent <= 9){
+      var moneySpent = randomNumber(5, Math.round(money/2));
+      money -= moneySpent;
+      
+      displayAlert("Remember our shed of gunpowder? Well um I " +
+        "kinda blew it up. Uh yeah... it's costing us " + moneySpent + 
+        " coins to fix this mess. \n\n- Your Assistant",
+        "OOPS!", "bruh", 1);
+    }else if(randomEvent <= 20 && months[month][1] == "Spring"){
+      var moneyRaise = randomNumber(2, 7);
+      leasePayment -= moneyRaise;
+      
+      displayAlert("Hello soldier. This is a notice that your lease will " +
+        "be increasing by " + moneyRaise + 
+        " coins and this is effective immediately. \n\n- General Korov",
+        "LEASE", "Alright", 1);
+    }else if(randomEvent <= 20 && months[month][1] == "Winter"){
+      var chosenTile = randomNumber(0, 9);
+      var counter = 0;
+      while(crops[chosenTile].planted == false){
+        chosenTile = randomNumber(0, 9);
+        counter++;
+        
+        if(counter == 100){
+          break;
+        }
+      }
+      
+      crops[chosenTile] = new Plant();
+      setProperty("tile" + (chosenTile+1), "image", "dirt_tile_0_" 
+      + randomNumber(1, 3) + ".png");
+      
+      if(counter != 100){
+        displayAlert("So uhm, a flash freeze happened and " + 
+      "one of our crops died. Yeah... unfortunate... \n\n- Your Assistant",
+        "FREEZE", "damm", "1");
+      }
+    }
+  }
+  
+  //update ui
+  updateUI();
 });
+
+//function to randomly pick a potato color
+function potatoColorPicker(){
+  var potatoSelector = randomNumber(1,3);
+      
+  if(potatoSelector == 1){
+    return "yellow";
+  }else if(potatoSelector == 2){
+      return "red";
+  }else{
+      return "purple";
+  }
+}
 
 //function to set various UI components
 function updateUI(){
@@ -238,9 +345,15 @@ function checkAndSet(tile, seed) {
     
     inventory[crops[tile-1].type + "Potato"] += harvest;
     
+    //show how many potatoes were earned
+    setProperty("potatoesEarned", "hidden", false);
+    setProperty("potatoesEarned", "text", "+" + harvest + " " + crops[tile-1].type + " potatoes");
+    setTimeout(function(){
+      setProperty("potatoesEarned", "hidden", true);
+    }, 1500);
+    
     //reset the tile
     crops[tile-1] = new Plant();
-
   }
 }
 
@@ -258,6 +371,32 @@ function displayFinancialInfo(){
     setProperty("coinsKept", "text-color", rgb(255, 255, 255));
   }
   setProperty("coinsKept", "text", profit);
+}
+
+// Display an alert function
+// alertNum represents which alert it is in the design so the function
+// can be reused and is not screen specific
+function displayAlert(body, title, button, alertNum){
+  //Make elemnts visible again
+  setProperty("popUpTitle" + alertNum, "hidden", false);
+  setProperty("popUpBodyBackdrop" + alertNum, "hidden", false);
+  setProperty("popUpBodyText" + alertNum, "hidden", false);
+  setProperty("popUpButton" + alertNum, "hidden", false);
+  setProperty("popUpBackdrop" + alertNum, "hidden", false);
+  
+  setProperty("popUpTitle" + alertNum, "text", title);
+  setProperty("popUpBodyText" + alertNum, "text", body);
+  setProperty("popUpButton" + alertNum, "text", button);
+}
+
+// Close an alert function
+function closeAlert(alertNum){
+  //Make elemnts visible again
+  setProperty("popUpTitle" + alertNum, "hidden", true);
+  setProperty("popUpBodyBackdrop" + alertNum, "hidden", true);
+  setProperty("popUpBodyText" + alertNum, "hidden", true);
+  setProperty("popUpButton" + alertNum, "hidden", true);
+  setProperty("popUpBackdrop" + alertNum, "hidden", true);
 }
 
 // Sort data function
@@ -281,4 +420,167 @@ function getBiggestYield(year){
   }
 }
 return biggestYield;
+}
+
+
+//market related code
+onEvent("marketButton", "click", function(){
+  setScreen("marketScreen");
+  updateMarket();
+});
+
+onEvent("farmButton", "click", function(){
+  setScreen("farmScreen");
+  updateUI();
+});
+
+onEvent("chest1", "click", function(){
+  chestLogic(1);
+  
+});
+
+onEvent("chest2", "click", function(){
+  chestLogic(2);
+});
+
+onEvent("chest3", "click", function(){
+  chestLogic(3);
+});
+
+onEvent("purpleSlider", "input", function(){
+  updateMarket();
+});
+
+onEvent("yellowSlider", "input", function(){
+  updateMarket();
+});
+
+onEvent("redSlider", "input", function(){
+  updateMarket();
+});
+
+onEvent("sellButton", "click", function(){
+  money+=(getProperty("purpleSlider", "value") * 10 + getProperty("yellowSlider", "value") * 3 + getProperty("redSlider", "value") * 5);
+  moneyEarnedInMonth+=(getProperty("purpleSlider", "value") * 10 + getProperty("yellowSlider", "value") * 3 + getProperty("redSlider", "value") * 5); 
+
+  inventory.purplePotato-=getProperty("purpleSlider", "value");
+  inventory.redPotato-=getProperty("redSlider", "value");
+  inventory.yellowPotato-=getProperty("yellowSlider", "value");
+  updateMarket();
+});
+
+onEvent("buyButton", "click", function(){
+  setProperty("purpleSeedAmount", "placeholder", "0");
+  setProperty("yellowSeedAmount", "placeholder", "0");
+  setProperty("redSeedAmount", "placeholder", "0");
+  
+  //display an alert if the user enters invalid values
+  if(isNaN(getProperty("purpleSeedAmount", "placeholder")) || 
+     isNaN(getProperty("yellowSeedAmount", "placeholder")) || 
+     isNaN(getProperty("redSeedAmount", "placeholder"))){
+
+    //displayAlert(1);
+
+  } else{
+    
+    console.log(getProperty("purpleSeedAmount", "value") / 2);
+    
+    //only subtract from overall money if valid is non NaN.
+    //ik its bad but it works for now, ill fix later
+    if(!isNaN(getNumber("purpleSeedAmount"))){
+      money-=getNumber("purpleSeedAmount")*3;
+      moneyEarnedInMonth-=getNumber("purpleSeedAmount")*3;
+      
+    }
+    if(!isNaN(getNumber("yellowSeedAmount"))){
+      money-=getNumber("yellowSeedAmount");
+      moneyEarnedInMonth-=getNumber("yellowSeedAmount");
+    }
+    if(!isNaN(getNumber("redSeedAmount"))){
+      money-=getNumber("redSeedAmount")*2;
+      moneyEarnedInMonth-=getNumber("redSeedAmount")*2;
+    }
+    
+    //this is called a conditional ternary operator, look it up
+    inventory.purpleSeeds+=isNaN(getNumber("purpleSeedAmount")) ? 0 : getNumber("purpleSeedAmount");
+    inventory.yellowSeeds+=isNaN(getNumber("yellowSeedAmount")) ? 0 : getNumber("yellowSeedAmount");
+    inventory.redSeeds+=isNaN(getNumber("redSeedAmount")) ? 0 : getNumber("redSeedAmount");
+
+  }
+});
+
+
+function updateMarket(){
+  setProperty("purpleSlider", "max", inventory.purplePotato);
+  setProperty("yellowSlider", "max", inventory.yellowPotato);
+  setProperty("redSlider", "max", inventory.redPotato);
+  
+  setProperty("purpleAmount", "text", "Sell " + getProperty("purpleSlider", "value") + " potatoes at " + getProperty("purpleSlider", "value") * 10 + "$");
+  setProperty("yellowAmount", "text", "Sell " + getProperty("yellowSlider", "value") + " potatoes at " + getProperty("yellowSlider", "value") * 3 + "$");
+  setProperty("redAmount", "text", "Sell " + getProperty("redSlider", "value") + " potatoes at " + getProperty("redSlider", "value") * 5 + "$");
+  setProperty("estimatedProfit", "text", "x" + (getProperty("purpleSlider", "value") * 10 + getProperty("yellowSlider", "value") * 3 + getProperty("redSlider", "value") * 5));
+  
+
+}
+
+
+//function to open and close chests accordingly
+var chestState = 0;
+function chestLogic(chestNum){
+  if(chestState == 0){
+    setProperty("chest" + chestNum, "image", "resized_closed_chest.png"); 
+    chestState = 1;
+    
+    if(chestNum == 1){
+      setProperty("coinPic", "hidden", false);
+      setProperty("purpleSlider", "hidden", false);
+      setProperty("redSlider", "hidden", false);
+      setProperty("yellowSlider", "hidden", false);
+      setProperty("redAmount", "hidden", false);
+      setProperty("yellowAmount", "hidden", false);
+      setProperty("purpleAmount", "hidden", false);
+      setProperty("estimatedProfit", "hidden", false);
+      setProperty("sellButton", "hidden", false);
+
+    } else if(chestNum == 2){
+      setProperty("buyButton", "hidden", false);
+      setProperty("pSeedPacket", "hidden", false);
+      setProperty("ySeedPacket", "hidden", false);
+      setProperty("rSeedPacket", "hidden", false);
+      setProperty("purpleSeedAmount", "hidden", false);
+      setProperty("yellowSeedAmount", "hidden", false);
+      setProperty("redSeedAmount", "hidden", false);
+      setProperty("purpleCost", "hidden", false);
+      setProperty("yellowCost", "hidden", false);
+      setProperty("redCost", "hidden", false);
+      
+    }
+  } else{
+    setProperty("chest" + chestNum, "image", "resized_chest.png"); 
+    chestState = 0;
+    if(chestNum == 1){
+      setProperty("coinPic", "hidden", true);
+      setProperty("purpleSlider", "hidden",true);
+      setProperty("redSlider", "hidden", true);
+      setProperty("yellowSlider", "hidden", true);
+      setProperty("redAmount", "hidden", true);
+      setProperty("yellowAmount", "hidden", true);
+      setProperty("purpleAmount", "hidden", true);
+      setProperty("estimatedProfit", "hidden", true);
+      setProperty("sellButton", "hidden", true);
+
+    }else if(chestNum == 2){
+      setProperty("buyButton", "hidden", true);
+      setProperty("pSeedPacket", "hidden", true);
+      setProperty("ySeedPacket", "hidden", true);
+      setProperty("rSeedPacket", "hidden", true);
+      setProperty("purpleSeedAmount", "hidden", true);
+      setProperty("yellowSeedAmount", "hidden", true);
+      setProperty("redSeedAmount", "hidden", true);
+      setProperty("purpleCost", "hidden", true);
+      setProperty("yellowCost", "hidden", true);
+      setProperty("redCost", "hidden", true);
+      
+    }
+  }
 }
