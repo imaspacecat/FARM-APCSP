@@ -49,12 +49,13 @@ var months = [["January", "Winter"], ["February", "Winter"], ["March", "Spring"]
 
 var gameYear = 2000;
 var month = 2;
-var money = 100;
+var money = 50;
 var monthsInDebt = 0;
 
 //Financial Data
 var moneyEarnedInMonth = 0;
 var leasePayment = -5;
+var expenses = 0;
 
 //Update the UI at the start
 updateUI();
@@ -133,6 +134,7 @@ onEvent("advanceDay", "click", function(){
   displayFinancialInfo();
 });
 
+//start the month + events
 onEvent("startMonth", "click", function(){
   //Set screen and time
   setScreen("farmScreen");
@@ -145,6 +147,7 @@ onEvent("startMonth", "click", function(){
     
   //reset money earned and pay lease
   moneyEarnedInMonth = 0;
+  expenses = 0;
   money += leasePayment;
   
   //Update all the crops
@@ -261,6 +264,11 @@ onEvent("startMonth", "click", function(){
   updateUI();
 });
 
+//reset the game
+onEvent("gameOverButton", "click", function(){
+  resetGame();
+});
+
 //function to randomly pick a potato color
 function potatoColorPicker(){
   var potatoSelector = randomNumber(1,3);
@@ -360,9 +368,10 @@ function checkAndSet(tile, seed) {
 // Function to set data on the ended month page
 function displayFinancialInfo(){
   setProperty("coinsEarned", "text", moneyEarnedInMonth);
+  setProperty("expensesPaid", "text", expenses);
   setProperty("leasePaid", "text", leasePayment);
   
-  var profit = moneyEarnedInMonth + leasePayment;
+  var profit = moneyEarnedInMonth + leasePayment + expenses;
   if(profit > 0){
     setProperty("coinsKept", "text-color", rgb(16, 197, 11));
   }else if (profit < 0){
@@ -371,6 +380,33 @@ function displayFinancialInfo(){
     setProperty("coinsKept", "text-color", rgb(255, 255, 255));
   }
   setProperty("coinsKept", "text", profit);
+}
+
+//function to reset data
+function resetGame(){
+  setScreen("homePage");
+  gameYear = 2000;
+  month = 2;
+  money = 0;
+  monthsInDebt = 0;
+  
+  //Financial Data
+  moneyEarnedInMonth = 0;
+  expenses = 0;
+  leasePayment = -5;
+  chosenCrop = "";
+  crops = [
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+    new Plant(),
+  ];
+  potatoYield = 0;
 }
 
 // Display an alert function
@@ -397,6 +433,10 @@ function closeAlert(alertNum){
   setProperty("popUpBodyText" + alertNum, "hidden", true);
   setProperty("popUpButton" + alertNum, "hidden", true);
   setProperty("popUpBackdrop" + alertNum, "hidden", true);
+  
+  if (monthsInDebt == 5){
+    setScreen("gameOverScreen");
+  }
 }
 
 // Sort data function
@@ -434,6 +474,8 @@ onEvent("farmButton", "click", function(){
   updateUI();
 });
 
+//on events for shoppity shop
+{
 onEvent("chest1", "click", function(){
   chestLogic(1);
   
@@ -483,44 +525,41 @@ onEvent("buyButton", "click", function(){
 
   } else{
     
-    console.log(getProperty("purpleSeedAmount", "value") / 2);
+    console.log(money);
     
-    //only subtract from overall money if valid is non NaN.
-    //ik its bad but it works for now, ill fix later
-    if(!isNaN(getNumber("purpleSeedAmount"))){
-      money-=getNumber("purpleSeedAmount")*3;
-      moneyEarnedInMonth-=getNumber("purpleSeedAmount")*3;
-      
-    }
-    if(!isNaN(getNumber("yellowSeedAmount"))){
-      money-=getNumber("yellowSeedAmount");
-      moneyEarnedInMonth-=getNumber("yellowSeedAmount");
-    }
-    if(!isNaN(getNumber("redSeedAmount"))){
-      money-=getNumber("redSeedAmount")*2;
-      moneyEarnedInMonth-=getNumber("redSeedAmount")*2;
-    }
-    
-    //this is called a conditional ternary operator, look it up
-    inventory.purpleSeeds+=isNaN(getNumber("purpleSeedAmount")) ? 0 : getNumber("purpleSeedAmount");
-    inventory.yellowSeeds+=isNaN(getNumber("yellowSeedAmount")) ? 0 : getNumber("yellowSeedAmount");
-    inventory.redSeeds+=isNaN(getNumber("redSeedAmount")) ? 0 : getNumber("redSeedAmount");
+    //buy seeeeeeeds (yotam's code sucked)
+    buySeeds("yellow", 1);
+    buySeeds("red", 3);
+    buySeeds("purple", 5);
 
+    //set back to zero
+    setProperty("purpleSeedAmount", "text", "");
+    setProperty("redSeedAmount", "text", "");
+    setProperty("yellowSeedAmount", "text", "");
   }
 });
+}
 
+//function to reduce repeat code in buying seeds
+function buySeeds(color, cost){
+  if(!isNaN(getNumber(color + "SeedAmount"))){
+      if(money >= getNumber(color + "SeedAmount")*cost){
+        money-=getNumber(color + "SeedAmount")*cost;
+        expenses-=getNumber(color + "SeedAmount")*cost; 
+        inventory[color + "seeds"]+=getNumber(color + "SeedAmount");
+    }
+  }
+}
 
 function updateMarket(){
   setProperty("purpleSlider", "max", inventory.purplePotato);
   setProperty("yellowSlider", "max", inventory.yellowPotato);
   setProperty("redSlider", "max", inventory.redPotato);
   
-  setProperty("purpleAmount", "text", "Sell " + getProperty("purpleSlider", "value") + " potatoes at " + getProperty("purpleSlider", "value") * 10 + "$");
-  setProperty("yellowAmount", "text", "Sell " + getProperty("yellowSlider", "value") + " potatoes at " + getProperty("yellowSlider", "value") * 3 + "$");
-  setProperty("redAmount", "text", "Sell " + getProperty("redSlider", "value") + " potatoes at " + getProperty("redSlider", "value") * 5 + "$");
+  setProperty("purpleAmount", "text", "Sell " + getProperty("purpleSlider", "value") + " purple potatoes at " + getProperty("purpleSlider", "value") * 10 + "$");
+  setProperty("yellowAmount", "text", "Sell " + getProperty("yellowSlider", "value") + " yellow potatoes at " + getProperty("yellowSlider", "value") * 3 + "$");
+  setProperty("redAmount", "text", "Sell " + getProperty("redSlider", "value") + " red potatoes at " + getProperty("redSlider", "value") * 5 + "$");
   setProperty("estimatedProfit", "text", "x" + (getProperty("purpleSlider", "value") * 10 + getProperty("yellowSlider", "value") * 3 + getProperty("redSlider", "value") * 5));
-  
-
 }
 
 
